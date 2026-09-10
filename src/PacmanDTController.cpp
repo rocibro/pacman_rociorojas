@@ -31,6 +31,17 @@ PacmanDTController::getMove(const GameState& game){
     
     auto targetCoords = game.getMaze().getNodePos(game.getGhostsPos(nearestGhost)); //tomamos las cordenadas del fantasma más cercano
     std::vector<Move> moves = game.getMaze().getPossibleMoves(pacmanNode); //movimientos legales de pacman
+
+	//Evitar que Pacman se "trabe" invirtiendo su dirección.
+	//Solo se permite revertir si es la única opción disponible (ej. un callejón sin salida).
+    if (moves.size() > 1){
+        Move reverse = turnBack(character->getDirection());
+        moves.erase(std::remove(moves.begin(), moves.end(), reverse), moves.end());
+        if (moves.empty()){
+            moves.push_back(reverse); //no había otra opción real, se permite igual
+        }
+    }
+
     if (game.isGhostEdible(nearestGhost)){
         int minDist = 1000000;
         Move minMove=character->getDirection();
