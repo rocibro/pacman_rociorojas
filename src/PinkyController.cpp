@@ -32,8 +32,6 @@ PinkyController::~PinkyController() {
 Move
 PinkyController::getMove(const GameState& game){
 	//dejamos en la pizarra el estado del juego y a quien controlamos
-	//tickeamos el arbol completo y devolvemos el movimiento que haya 
-	//quedado escrito por la acción que se ejecuta
 	PinkyInfo::getInfo()->in_character = character;
 	PinkyInfo::getInfo()->in_gamestate = &game;
 	root->tick();
@@ -145,10 +143,7 @@ Status PinkyFrightened::update(){
 }
 
 PinkyScatter::PinkyScatter(): Behavior(){
-	//esquina arriba a la derecha, se elige un x gigante en vez del
-	//ancho real del laberinto para no tener que calcularlo. Al solo comparar
-	//distancias con el punto, el efecto es el mismo
-	cornerTarget = std::make_pair(100000, 0);
+	cornerTarget = std::make_pair(0, 0);
 }
 
 Status PinkyScatter::update(){
