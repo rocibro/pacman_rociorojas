@@ -1,13 +1,12 @@
 #pragma once
 
-#include "Controller.h"
+#include "FSMController.h"
 
 
-class BlinkyController: public Controller {
+class BlinkyController: public FSMController {
 
 public:
 	BlinkyController(std::shared_ptr<Character> character);
 	virtual ~BlinkyController();
-	virtual Move getMove(const GameState& game)override;
 };
 

@@ -1,60 +1,25 @@
 #include "PinkyController.h"
 
-
-PinkyInfo* PinkyInfo:: info = nullptr; //solo existe una instancia
-
-//Arma el árbol una vez en el constructor
 PinkyController::PinkyController(std::shared_ptr<Character> character):
-	Controller(character), root(std::make_shared<Selector>()){
+	BTGhostController(character){
 	
-	//1ra Rama: Si Pinky es comestible, huir
-	auto filter = std::make_shared<Filter>();
-	filter->addCondition(std::make_shared<PinkyPowerPill>()); //Condición
-	filter->addAction(std::make_shared<PinkyFrightened>()); //Acción
-	root->addChild(filter);
-
-	//2da Rama: si no está en frightened, elegir entre Scatter y Chase
-	auto nonFrightened = std::make_shared<Selector>();
-
-	auto scatterFilter = std::make_shared<Filter>();
-	scatterFilter->addCondition(std::make_shared<PinkyTimeOut>()); //Condición
-	scatterFilter->addAction(std::make_shared<PinkyScatter>()); //Acción
-	nonFrightened->addChild(scatterFilter);
-
-	nonFrightened->addChild(std::make_shared<PinkyChase>());
-
-	root->addChild(nonFrightened);
+	buildTree();
 }
 
 PinkyController::~PinkyController() {
 }
 
-Move
-PinkyController::getMove(const GameState& game){
-	//dejamos en la pizarra el estado del juego y a quien controlamos
-	PinkyInfo::getInfo()->in_character = character;
-	PinkyInfo::getInfo()->in_gamestate = &game;
-	root->tick();
-
-	return PinkyInfo::getInfo()->out_move;
+std::shared_ptr<Behavior> PinkyController::createChaseBehavior(){
+	return std::make_shared<PinkyChase>();
 }
 
-PinkyTimeOut::PinkyTimeOut() : Behavior() {
-	lastTime = std::chrono::high_resolution_clock::now();
-}
-
-Status PinkyTimeOut::update(){
-	std::chrono::duration<float> timeStamp = std::chrono::high_resolution_clock::now() - lastTime;
-	if ((int)timeStamp.count()%27 < 7){
-		return BH_SUCCESS;
-	}else{
-		return BH_FAILURE;
-	}
+std::shared_ptr<Behavior> PinkyController::createFrightenedBehavior(){
+	return std::make_shared<PinkyFrightened>();
 }
 
 Status PinkyChase::update(){
-	auto character = PinkyInfo::getInfo()->in_character;
-	auto gs = PinkyInfo::getInfo()->in_gamestate;
+	auto character = Info::getInfo()->in_character;
+	auto gs = Info::getInfo()->in_gamestate;
 
 	//calculamos el nodo objetivo: 4 pasos desde Pacman en su dirección actual
 	int targetNode = gs->getPacmanPos();
@@ -94,24 +59,13 @@ Status PinkyChase::update(){
 		}
 	}
 	
-	PinkyInfo::getInfo()->out_move = minMove;
+	Info::getInfo()->out_move = minMove;
 	return BH_SUCCESS;
 }
 
-Status PinkyPowerPill::update(){
-	auto character = PinkyInfo::getInfo()->in_character;
-	auto ghost = dynamic_cast<Ghost*>(character.get());
-
-	if (ghost!=nullptr && ghost->isEdible()){
-		return BH_SUCCESS;
-	}else{
-		return BH_FAILURE;
-	}
-}
-
 Status PinkyFrightened::update(){
-	auto character = PinkyInfo::getInfo()->in_character;
-	auto gs = PinkyInfo::getInfo()->in_gamestate;
+	auto character = Info::getInfo()->in_character;
+	auto gs = Info::getInfo()->in_gamestate;
 	auto pacman = gs->getMaze().getNodePos(gs->getPacmanPos());
 
 	std::vector<Move> moves;
@@ -138,44 +92,6 @@ Status PinkyFrightened::update(){
 		}
 	}
 
-	PinkyInfo::getInfo()->out_move = maxMove;
-	return BH_SUCCESS;
-}
-
-PinkyScatter::PinkyScatter(): Behavior(){
-	cornerTarget = std::make_pair(0, 0);
-}
-
-Status PinkyScatter::update(){
-	auto character = PinkyInfo::getInfo()->in_character;
-	auto gs = PinkyInfo::getInfo()->in_gamestate;
-
-	std::vector<Move> moves;
-	if(character->getDirection()==PASS){
-		moves = gs->getMaze().getPossibleMoves(character->getPos());
-	} else{
-		moves = gs->getMaze().getGhostLegalMoves(character->getPos(), character->getDirection());
-	}
-	
-	float minDist = 10000000;
-	Move minMove = moves[0];
-
-	for (Move m : moves){
-		int vecino = gs->getMaze().getNeighbour(character->getPos(), m);
-		if (vecino < 0) continue;
-
-		auto vecinoCoords = gs->getMaze().getNodePos(vecino);
-		int dx = vecinoCoords.first - cornerTarget.first;
-		int dy = vecinoCoords.second - cornerTarget.second;
-
-		int dist = dx*dx + dy*dy;
-
-		if (dist < minDist){
-			minDist = dist;
-			minMove = m;
-		}
-	}
-
-	PinkyInfo::getInfo()->out_move = minMove;
+	Info::getInfo()->out_move = maxMove;
 	return BH_SUCCESS;
 }

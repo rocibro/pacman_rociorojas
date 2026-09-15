@@ -28,8 +28,17 @@ public:
 };
 
 class BTGhostController: public Controller {
-private:
+protected:
     std::shared_ptr<Composite> root;
+    
+    //para que las subclases puedan sobreescribir lo que sea necesario
+    virtual std::shared_ptr<Behavior> createChaseBehavior();
+    virtual std::shared_ptr<Behavior> createScatterBehavior();
+    virtual std::shared_ptr<Behavior> createFrightenedBehavior();
+    virtual std::shared_ptr<Behavior> createPowerPillCondition();
+    virtual std::shared_ptr<Behavior> createScatterCondition();
+
+    void buildTree();
 public:
 	BTGhostController(std::shared_ptr<Character> character);
 	virtual ~BTGhostController();
@@ -43,18 +52,13 @@ public:
 };
 
 class Frightened : public Behavior{
-private:
-    std::mt19937 e;
-    std::uniform_int_distribution<int> uniform_dist;
 public:
     virtual Status update() override;
-    Frightened ();
-
 };
 
 class Scatter : public Behavior{
 private:
-    std::pair<int,int> target;
+    std::pair<int,int> cornerTarget;
 
 public:
     virtual Status update() override;

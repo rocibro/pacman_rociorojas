@@ -2,16 +2,10 @@
 
 
 BlinkyController::BlinkyController(std::shared_ptr<Character> character):
-	Controller(character){
+	FSMController(character){
 }
 
 BlinkyController::~BlinkyController() {
 
 }
 
-Move
-BlinkyController::getMove(const GameState& game){
-	return PASS;	
-
-	
-}

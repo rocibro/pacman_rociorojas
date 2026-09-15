@@ -16,9 +16,12 @@
 class GhostStateMachine;
 
 class FSMController: public Controller {
-	std::mt19937 e;
-	std::uniform_int_distribution<int> uniform_dist;
+protected:
 	std::shared_ptr<GhostStateMachine> fsm;
+	virtual std::shared_ptr<FSMState> createChaseState();
+	virtual std::shared_ptr<FSMState> createScatterState();
+	virtual std::shared_ptr<FSMState> createFrightenedState();
+	void buildFSM();
 public:
 	FSMController(std::shared_ptr<Character> character);
 	virtual ~FSMController();
@@ -64,7 +67,9 @@ class NonFrightenedState: public FSMState{
 	static const int chase_seconds = 20;
 
 public:
-	NonFrightenedState(std::shared_ptr<Character> _character);
+	NonFrightenedState(std::shared_ptr<Character> _character,
+			std::shared_ptr<FSMState> chaseState,
+			std::shared_ptr<FSMState> scatterState);
 	void onEnter(const GameState& gs) override;
 	Move onUpdate(const GameState& gs) override;
 	void onExit(const GameState& gs) override;
@@ -101,7 +106,10 @@ public:
 class GhostStateMachine: public FiniteStateMachine{
 
 public:
-	GhostStateMachine(std::shared_ptr<Character> _character);
+	GhostStateMachine(std::shared_ptr<Character> _character,
+			std::shared_ptr<FSMState> chaseState,
+			std::shared_ptr<FSMState> scatterState,
+			std::shared_ptr<FSMState> frightenedState);
 	Move update(const GameState& gs) override;
 	~GhostStateMachine();
 

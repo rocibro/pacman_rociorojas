@@ -9,14 +9,28 @@
 #include <iostream>
 
 FSMController::FSMController(std::shared_ptr<Character> character):
-	Controller(character),
-	e(rand()),
-	uniform_dist(0,3),
-	fsm(std::make_shared<GhostStateMachine>(character)) {
+	Controller(character){
+	buildFSM();
 }
 
 FSMController::~FSMController() {
 	// TODO Auto-generated destructor stub
+}
+std::shared_ptr<FSMState> FSMController::createChaseState(){
+	return std::make_shared<ChaseState>(character);
+}
+
+std::shared_ptr<FSMState> FSMController::createScatterState(){
+	return std::make_shared<ScatterState>(character);
+}
+
+std::shared_ptr<FSMState> FSMController::createFrightenedState(){
+	return std::make_shared<FrightenedState>(character);
+}
+
+void FSMController::buildFSM(){
+	fsm = std::make_shared<GhostStateMachine>(character,
+			createChaseState(), createScatterState(), createFrightenedState());
 }
 
 Move 
@@ -126,10 +140,12 @@ Move ScatterState:: onUpdate(const GameState& game){
 ScatterState::~ScatterState(){}
 
 ///////////////////////////////NonFrightenedState///////////////////////////////////////
-NonFrightenedState::NonFrightenedState(std::shared_ptr<Character> _character): FSMState(_character){
-	chaseState = std::make_shared<ChaseState>(_character);
-	scatterState = std::make_shared<ScatterState>(_character);
+NonFrightenedState::NonFrightenedState(std::shared_ptr<Character> _character,
+		std::shared_ptr<FSMState> _chaseState,
+		std::shared_ptr<FSMState> _scatterState): FSMState(_character),
+		chaseState(_chaseState), scatterState(_scatterState){
 	activeChild = scatterState; //pacman clásico arranca en Scatter
+	started = false;
 }
 
 void NonFrightenedState::onEnter(const GameState& gs){
@@ -232,9 +248,12 @@ std::shared_ptr<FSMState> NotEdibleTransition::getNextState(){
 	return next;
 }
 /////////////////////////////////////GhostStateMachine/////////////////////////////
-GhostStateMachine::GhostStateMachine(std::shared_ptr<Character> _character):FiniteStateMachine(_character){
-	auto nonFrightened = std::make_shared<NonFrightenedState>(_character);
-	auto frightened = std::make_shared<FrightenedState>(_character);
+GhostStateMachine::GhostStateMachine(std::shared_ptr<Character> _character,
+		std::shared_ptr<FSMState> chaseState,
+		std::shared_ptr<FSMState> scatterState,
+		std::shared_ptr<FSMState> frightenedState):FiniteStateMachine(_character){
+	auto nonFrightened = std::make_shared<NonFrightenedState>(_character, chaseState, scatterState);
+	auto frightened = frightenedState;
 
 	nonFrightened->addTransition(std::make_shared<EdibleTransition>(_character, frightened));
 	frightened->addTransition(std::make_shared<NotEdibleTransition>(_character, nonFrightened));
@@ -245,7 +264,6 @@ GhostStateMachine::GhostStateMachine(std::shared_ptr<Character> _character):Fini
 	initialState = nonFrightened;
 	activeState = initialState;
 }
-
 
 
 Move GhostStateMachine::update(const GameState& gs){
